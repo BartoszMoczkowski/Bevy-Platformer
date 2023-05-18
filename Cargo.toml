@@ -1,0 +1,3 @@
+[workspace]
+members = ["gui/rust_gui", "engine/rust_core"]
+resolver = "2"
