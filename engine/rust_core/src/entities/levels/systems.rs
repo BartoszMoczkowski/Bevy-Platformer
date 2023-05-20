@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use crate::entities::{
-    levels::components::{Wall, WallBundle},
+    levels::components::{Wall},
     player::components::Player    
 };
 use crate::entities::collisions::components::GroundDetection;

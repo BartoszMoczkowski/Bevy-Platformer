@@ -14,3 +14,6 @@ pub use entities::player::components::*;
 
 pub use entities::sensor::systems::*;
 pub use entities::sensor::components::*;
+
+pub use entities::animations::systems::*;
+pub use entities::animations::components::*;

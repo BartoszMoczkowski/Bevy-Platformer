@@ -1,11 +1,11 @@
-use bevy::prelude::*;
-use std::collections::HashMap;
+use bevy::prelude::{*};
+use bevy_rapier2d::prelude::*;
 
-use crate::entities::animations::components::*;
+use crate::{entities::animations::components::*};
 
-fn load_animation(
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+pub fn load_animation(
+    asset_server: &AssetServer,
+    texture_atlases: &mut Assets<TextureAtlas>,
     path : &str,
     tile_size : Vec2,
     col : usize,
@@ -29,22 +29,53 @@ fn load_animation(
 
 
     Animation{
+        name : path.to_string(),
         texture_atlas_handle : texture_atlas_handle,
-        current_frame : first_sprite_index,
         first_frame : first_sprite_index,
         last_frame : last_sprite_index,
         repeating : repeating
 
     }   
 }
-
-
-pub fn create_animation_controller(
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    tile_size : Vec2,
-    col : usize,
-    rows : usize,
+pub fn animate(
+    mut query : Query<(&mut AnimationController, &mut TextureAtlasSprite)>,
+    time : Res<Time>,
+    mut anim_timer : ResMut<AnimationTimer>
 ){
-
+    
+    if anim_timer.0.tick(time.delta()).just_finished(){
+        for (mut anim, mut tas) in &mut query{
+            anim.frame = if anim.frame == anim.current_animation().last_frame{
+                anim.current_animation().first_frame
+            } else {
+                anim.frame + 1
+            };
+            tas.index = anim.frame;
+        }
+    }
 }
+pub struct StateChangeEvent(pub Entity);
+
+pub fn switch_animation(
+    mut query : Query<(&AnimationController, &mut Handle<TextureAtlas>)>,
+    ev_state_change : EventReader<StateChangeEvent>
+){
+    if ev_state_change.len() !=0{
+        for (anim, mut tas_handle) in &mut query{
+            let new_handle = anim.current_animation().texture_atlas_handle.clone_weak();
+            *tas_handle = new_handle;
+        }
+    }
+}
+pub fn animation_flip_axis(
+    mut query : Query<(&Velocity, &mut TextureAtlasSprite)>
+){
+    for (vel, mut tas) in &mut query{
+        if vel.linvel.x > 0. {
+            tas.flip_x = true;
+        }else if vel.linvel.x < 0. {
+            tas.flip_x = false;
+        }
+    }
+}
+

@@ -21,7 +21,7 @@ impl From<&EntityInstance> for ColliderBundle{
 
         match value.identifier.as_ref() {
             "Player" => ColliderBundle {
-                collider: Collider::cuboid(8., 14.),
+                collider: Collider::cuboid(8., 12.),
                 rigid_body: RigidBody::Dynamic,
                 friction: Friction {
                     coefficient: 0.0,

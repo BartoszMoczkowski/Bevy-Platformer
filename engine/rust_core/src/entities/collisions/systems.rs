@@ -1,13 +1,8 @@
 use bevy::prelude::*;
-use bevy_ecs_ldtk::prelude::*;
-use crate::entities::{
-    levels::components::{Wall, WallBundle},
-    player::components::Player    
-};
+
 use crate::entities::collisions::components::GroundDetection;
 use crate::entities::collisions::components::GroundSensor;
 
-use std::collections::{HashMap, HashSet};
 
 use bevy_rapier2d::prelude::*;
 

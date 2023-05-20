@@ -1,8 +1,7 @@
-use bevy::{prelude::*, ecs::bundle};
+use bevy::{prelude::*};
 use bevy_ecs_ldtk::prelude::*;
-use bevy_rapier2d::prelude::*;
-
-use crate::entities::collisions::components::{ColliderBundle, GroundDetection};
+use std::{collections::HashMap, fs::File};
+use crate::{entities::{collisions::components::{ColliderBundle, GroundDetection}, animations::{components::{AnimationController}, systems::load_animation}}, EntityAnimationData};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Player{}
@@ -11,6 +10,7 @@ pub struct Player{}
 pub struct PlayerBundle {
     #[bundle]
     pub sprite_bundle : SpriteSheetBundle,
+    pub animation_controller : AnimationController,
     #[bundle]
     pub collider_bundle : ColliderBundle,
     pub player : Player,
@@ -23,24 +23,40 @@ pub struct PlayerBundle {
 impl LdtkEntity for PlayerBundle{
     fn bundle_entity(
             entity_instance: &EntityInstance,
-            layer_instance: &LayerInstance,
-            tileset: Option<&Handle<Image>>,
-            tileset_definition: Option<&TilesetDefinition>,
+            _layer_instance: &LayerInstance,
+            _tileset: Option<&Handle<Image>>,
+            _tileset_definition: Option<&TilesetDefinition>,
             asset_server: &AssetServer,
             texture_atlases: &mut Assets<TextureAtlas>,
         ) -> Self {
         
-        let texture_handle = asset_server.load("sprites/player1.png");
-        let texture_atlas = 
-            TextureAtlas::from_grid(
-                texture_handle,
-                Vec2::new(24.0, 24.0),
-                1,
-                1,
-                None,
-                None
+        let f = File::open("assets/sprites/player_anims.yaml").expect("Cannot open the player anim data file");
+        let player_anim_data : EntityAnimationData = serde_yaml::from_reader(f).expect("Cannot deserialize player anim data");
+
+        let mut anims = HashMap::new();
+        for (state,anim_data) in player_anim_data.animations{
+            let anim = load_animation(
+                asset_server, 
+                texture_atlases,
+                &anim_data.path, 
+                anim_data.tile_size, 
+                anim_data.columns, 
+                anim_data.rows, 
+                anim_data.first_index, 
+                anim_data.last_index, 
+                anim_data.repeating
             );
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+            anims.insert(state, anim);
+        }
+
+        let texture_atlas_handle = anims[&0].texture_atlas_handle.clone();
+        let anim_contr = AnimationController{
+            state : 0,
+            state_transitions : player_anim_data.transitions,
+            possible_animations : anims,
+            frame : 0
+        };
 
         let ssb = SpriteSheetBundle{
             texture_atlas : texture_atlas_handle,
@@ -53,6 +69,7 @@ impl LdtkEntity for PlayerBundle{
             sprite_bundle: ssb,
             collider_bundle: ColliderBundle::from(entity_instance),
             player: Player {},
+            animation_controller : anim_contr,
             wordly: Worldly::from_entity_info(entity_instance),
             ground_detection: GroundDetection { on_ground: true },
             entity_instance: EntityInstance::from(entity_instance)

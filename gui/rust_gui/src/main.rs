@@ -1,14 +1,12 @@
-
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
 use bevy_rapier2d::prelude::*;
 
+
+
 use rust_core::*;
 fn main(){
-
-
-
     App::new()
     .add_plugins(DefaultPlugins)
     .add_plugin(LdtkPlugin)
@@ -26,6 +24,8 @@ fn main(){
         set_clear_color: SetClearColor::FromLevelBackground,
         ..Default::default()
     })
+    .insert_resource(AnimationTimer(Timer::from_seconds(0.3, TimerMode::Repeating)))
+    .add_event::<StateChangeEvent>()
     .add_startup_systems((
         setup,
     ))
@@ -34,9 +34,13 @@ fn main(){
         spawn_ground_sensor,
         camera_fit_inside_current_level,
         ground_detection,
-        update_on_ground,
-        movement,
-        update_level_selection
+        update_on_ground.after(ground_detection),
+        movement.after(update_on_ground),
+        update_level_selection,
+        animate,
+        landed,
+        animation_flip_axis,
+        switch_animation.after(movement)
     ))
     .register_ldtk_entity::<PlayerBundle>("Player")
     .register_ldtk_int_cell::<WallBundle>(1)
