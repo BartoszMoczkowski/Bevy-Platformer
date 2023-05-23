@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 
 
 
-use rust_core::*;
+use rust_core::{*, components::{EnemyTextureData, EnemyBundle}, systems::spawn_enemy};
 fn main(){
     App::new()
     .add_plugins(DefaultPlugins)
@@ -25,6 +25,7 @@ fn main(){
         ..Default::default()
     })
     .insert_resource(AnimationTimer(Timer::from_seconds(0.3, TimerMode::Repeating)))
+    .init_resource::<EnemyTextureData>()
     .add_event::<StateChangeEvent>()
     .add_startup_systems((
         setup,
@@ -40,10 +41,12 @@ fn main(){
         animate,
         landed,
         animation_flip_axis,
-        switch_animation.after(movement)
+        switch_animation.after(movement),
+        spawn_enemy
     ))
     .register_ldtk_entity::<PlayerBundle>("Player")
     .register_ldtk_int_cell::<WallBundle>(1)
     .register_ldtk_int_cell::<WallBundle>(3)
+    .register_ldtk_entity::<EnemyBundle>("Mob")
     .run();
 }

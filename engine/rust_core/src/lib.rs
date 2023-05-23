@@ -17,3 +17,6 @@ pub use entities::sensor::components::*;
 
 pub use entities::animations::systems::*;
 pub use entities::animations::components::*;
+
+pub use entities::enemy::systems;
+pub use entities::enemy::components;

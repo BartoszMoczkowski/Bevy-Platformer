@@ -1,6 +1,8 @@
 use bevy::prelude::{*};
 use bevy_rapier2d::prelude::*;
 
+use std::{fs::File, collections::HashMap};
+
 use crate::{entities::animations::components::*};
 
 pub fn load_animation(
@@ -37,6 +39,50 @@ pub fn load_animation(
 
     }   
 }
+
+pub fn generate_animation_components(path : String, asset_server: &AssetServer, texture_atlases: &mut Assets<TextureAtlas>) -> (SpriteSheetBundle, AnimationController){
+    let f = File::open(path).expect("Cannot open the player anim data file");
+    let player_anim_data : EntityAnimationData = serde_yaml::from_reader(f).expect("Cannot deserialize player anim data");
+
+    let mut anims = HashMap::new();
+    for (state,anim_data) in player_anim_data.animations{
+        let anim = load_animation(
+            asset_server, 
+            texture_atlases,
+            &anim_data.path, 
+            anim_data.tile_size, 
+            anim_data.columns, 
+            anim_data.rows, 
+            anim_data.first_index, 
+            anim_data.last_index, 
+            anim_data.repeating
+        );
+
+        anims.insert(state, anim);
+    }
+
+    let texture_atlas_handle = anims[&0].texture_atlas_handle.clone();
+    let anim_contr = AnimationController{
+        state : 0,
+        state_transitions : player_anim_data.transitions,
+        possible_animations : anims,
+        frame : 0
+    };
+
+    let ssb = SpriteSheetBundle{
+        texture_atlas : texture_atlas_handle,
+        sprite : TextureAtlasSprite::new(0),
+        ..Default::default()
+    };
+
+    (ssb, anim_contr)
+
+}
+
+
+
+
+//systems
 pub fn animate(
     mut query : Query<(&mut AnimationController, &mut TextureAtlasSprite)>,
     time : Res<Time>,
@@ -45,6 +91,9 @@ pub fn animate(
     
     if anim_timer.0.tick(time.delta()).just_finished(){
         for (mut anim, mut tas) in &mut query{
+            if anim.possible_animations.len() == 0{
+                return;
+            }
             anim.frame = if anim.frame == anim.current_animation().last_frame{
                 anim.current_animation().first_frame
             } else {
